@@ -6,16 +6,21 @@ public class PlayerController : MonoBehaviour
 {
     // Start is called before the first frame update
     public float tileSize = 5;
+    private float lastMovedOnbeat;
     private bool inputHeld;
     private bool isMoving;
 
     private IEnumerator moveCoroutine;
     private GameObject animParent;
+
+    private LevelController parent;
     void Start()
     {
+        lastMovedOnbeat = -1;
         inputHeld = false;
         isMoving = false;
         animParent = transform.Find("AnimParent").gameObject;
+        parent = GetComponentInParent<LevelController>();
     }
 
     // Update is called once per frame
@@ -37,8 +42,20 @@ public class PlayerController : MonoBehaviour
                 {
                     vert = horiz == 0 ? vert : 0;  //block diagonal
                     Vector3 moveDir = tileSize * new Vector3(horiz, 0, vert);
-                    moveCoroutine = move(moveDir);
-                    StartCoroutine(moveCoroutine);
+
+                    float currentbeat = parent.conductor.songPositionInBeats;
+                    if (parent.isOnBeat() && currentbeat >= (lastMovedOnbeat + 0.5))
+                    {
+                        Debug.Log("HIT");
+                        //transform.Translate(moveDir);
+                        moveCoroutine = move(moveDir);
+                        StartCoroutine(moveCoroutine);
+                        lastMovedOnbeat = currentbeat;
+                    }
+                    else
+                    {
+                        Debug.Log("MISS");
+                    }
                     inputHeld = true;
                 }
 
@@ -63,12 +80,13 @@ public class PlayerController : MonoBehaviour
             deg = 90f;
         else if (dir.x < 0)
             deg = -90f;
+        var length = 30.0f;
         animParent.transform.eulerAngles = new Vector3(0, deg, 0);
 
-        for (int i = 1; i <= 100; i++)
+        for (int i = 1; i <= length; i++)
         {
-            transform.Translate(0.01f * dir);
-            animParent.transform.Rotate(0.01f * 90, 0, 0, Space.Self);
+            transform.Translate((1.0f / length) * dir);
+            animParent.transform.Rotate((1.0f / length) * 90, 0, 0, Space.Self);
             yield return null;
         }
         isMoving = false;
